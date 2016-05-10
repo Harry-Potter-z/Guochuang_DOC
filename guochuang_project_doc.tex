@@ -229,7 +229,7 @@ varys是交换结构，考虑无阻塞的情况。\\
              & Floodlight V1.0\\
              & OVS v2.02 \\
              & OpenFlow1.3 \\
-             & Hadoop2.7    \\             
+             & Hadoop2.7    \\
              & Python2.7    \\
   \hline
 \end{tabular}
@@ -243,7 +243,9 @@ varys是交换结构，考虑无阻塞的情况。\\
 将多个虚拟交换机ovs挂载到了floodlight控制器上\\
 
 利用ovs完成hadoop平台上的数据导流工作
+
 \subsection{网络拓扑}
+
 \begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=3.5in]{topology.png}\relax
@@ -252,6 +254,7 @@ varys是交换结构，考虑无阻塞的情况。\\
 
 \section{系统设计与开发}
 \subsection{系统整体架构设计}
+
 \begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=3.5in]{work_arch.jpg}\relax
@@ -260,23 +263,44 @@ varys是交换结构，考虑无阻塞的情况。\\
 
 \subsection{Mapreduce Fetcher}
 1孟\\
-修改 Hadoop，向PyCon控制器POST必要的数据,Reduce进程启动一些数据copy线程(Fetcher)，通过HTTP方式请求map task所在的TaskTracker获取map task的输出文件。
+Map任务结束之后，主要进行Copy、Sort、Reduce三个步骤；其中Copy阶段，就是从执行各个Map任务的节点获取map的输出文件。这是由ReduceTask.ReduceCopier 类来负责。ReduceCopier对象负责将Map函数的输出拷贝至Reduce所在机器。在这个过程中，Reduce 进程会启动一些数据复制线程 (Fetcher)，通过 HTTP GET 方法请求由 HTTP Server 管理的 Shuffle 数据块，这些数据块是先前成功完成的 Map Task 的输出文件。这些等待 Shuffle 的数据块可能在内存中也有可能在 HDFS 中，取决于服务器当前的内存是否充足以及对 Hadoop 的配置。如果大小超过一定阈值就写到磁盘，否则放入内存。\\
+为了利用SDN controller建立全局的调度策略，优化代码插入位置，在NM获得全局调度信息而不用这样一个一个发送，以提高效率。我们做出了一个初步可用的 HTTP Client POST，向PyCon控制器（SDN controller）POST必要的数据，如：源主机、目的主机、数据长度以及MapID等信息。
+
 \subsection{Python controller}
 \subsubsection{HTTPserver}
-2.孟3.孟\\
+3.孟\\
+在hadoop中很多地方都用到了servlet，并且使用jetty作为servlet的容器来提供http的服务，其主要是通过org.apache.hadoop.http.HttpServer类实现的，HttpServer类是对Jetty的简单封装，通过调用HttpServer类的addServlet方法增加可以实现增加servlet到jetty的功能。\\
+hadoop各个组件都会用到HttpServer,datanode/namenode,resourcemanager等。\\
+Hadoop内嵌了Http服务器Jetty，主要有以下两方面的作用
+\begin{enumerate}
+  \item Web访问接口，用于展示Hadoop的内部状态
+  \item 参与Hadoop集群的运行和管理
+\end{enumerate}
+
 配置队列，进行限速\\
 获取网络信息\\
 下发流表\\
 
 \subsubsection{路由算法模块}
 4.孟\\
-加权最短路径，利用可用带宽\\
-最先完成优先
+1.加权最短路径
+Dijkstra、矩阵处理
+利用可用带宽
+
+2.最小瓶颈（Flow的传输时间最短）
+使用了网络带宽信息，最先完成优先
+
 \subsection{Floodlight REST API}
 5孟
 \subsubsection{Packet-in模块}
+目的：取得源端口号\\
+
+修改了 Floodlight，添加了一个 packet in 数据包处理模块。可以提取 TCP Source Port 和 Payload 内的 Request URI 并且发送给 PyCon（之所以这么做是因为在 Hadoop MR 模块源码内无法通过 HTTPURLConnection 直接拿到 Source Port）\\
+
+简单解释一下 packet in 是什么包。
 
 \subsubsection{REST API}
+2.孟\\
 获取流的端口信息
 
 \section{项目的成果}
