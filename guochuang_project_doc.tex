@@ -110,14 +110,14 @@ MapReduce架构的大数据处理的操作流程如下：
 \begin{enumerate}
   \item 首先调用MapReduce库的输入流模块，将输入文件分成M个数据片度，每个数据片段的大小可以通过可选的参数来控制。然后用户程序在机群中创建大量的程序副本。程序副本中包含一个特殊的master程序。其它的程序都是worker程序，由master分配任务。有M个Map任务和R个Reduce任务将被分配，master将一个Map任务或Reduce任务分配给一个空闲的worker。
   \item 被分配了map任务的worker程序读取相关的输入数据片段，从输入的数据片段中解析出key/value pair，然后把key/value pair传递给用户自定义的Map函数，由Map函数生成并输出的中间key/value pair，并缓存在内存中。
-  \item 缓存中的key/value pair通过调用Partition模块分成R个区域，之后周期性的写入到本地磁盘上。缓存的key/value pair在本地磁盘上的存储位置将被传给master，由master负责把这些存储位置再传送给Reduce worker。
+  \item 缓存中的key/value pair通过调用Partition模块分成R个区域，之后周期性的写入到本地磁盘上。缓存的key/value pair 在本地磁盘上的存储位置将被传给master，由master负责把这些存储位置再传送给Reduce worker。
   \item 当Reduce worker程序接收到master程序发来的数据存储位置信息后，使用RPC从Map worker所在主机的磁盘上读取这些缓存数据。当Reduce worker读取了所有的中间数据后，通过对key进行排序后使得具有相同key值的数据聚合在一起。由于许多不同的key值会映射到相同的Reduce 任务上，因此必须进行排序。如果中间数据太大无法在内存中完成排序，那么就要在外部进行排序。
   \item Reduce worker程序遍历排序后的中间数据，对于每一个唯一的中间key值，Reduce worker程序将这个key值和它相关的中间value值的集合传递给用户自定义的Reduce函数。Reduce函数的输出被追加到所属分区的输出文件。
   \item 当所有的Map和Reduce任务都完成之后，master唤醒用户程序。在这个时候，在用户程序里的对MapReduce调用才返回。在成功完成任务之后，MapReduce的输出存放在R个输出文件中（对应每个Reduce任务产生一个输出文件，文件名由用户指定）。一般情况下，用户不需要将这R个输出文件合并成一个文件–他们经常把这些文件作为另外一个MapReduce的输入，或者在另外一个可以处理多个分割文件的分布式应用中使用。
 \end{enumerate}
 
 \subsubsection{Shuffle阶段}
-整体的Shuffle过程包含以下几个部分：Map端Shuffle、Sort阶段、Reduce端Shuffle。即是说：Shuffle 过程横跨 map 和 reduce 两端，中间包含 sort 阶段。
+整体的Shuffle过程包含以下几个部分：Map端Shuffle、Sort阶段、Reduce 端Shuffle。即是说：Shuffle 过程横跨 map 和 reduce 两端，中间包含 sort 阶段。
 
 \begin{figure}[!htb]
     \centering
@@ -145,13 +145,13 @@ Floodlight controller模块为多数应用实现了一些通用的功能：
 \end{figure}
 Floodlight控制器工作过程如下：
 \begin{enumerate}
-  \item 控制器与交换机建立ofchannel通道，控制器通过ofchannel控制和管理交换机。
+  \item 控制器与交换机建立ofchannel通道，控制器通过ofchannel 控制和管理交换机。
   \item 当交换机收到一个数据包且流表中没有匹配条目，交换机会将数据包封装在packet-in消息发送给控制器，此时数据包会缓存在交换机中等待处理。
-  \item 控制器收到packet-in消息后，可以发送flow-mod消息向交换机写一个流表项，并且将flow-mod消息中buffer-id字段设置为packet-in消息中的buffer-id值。从而控制器向交换机写入了一条与数据包相关的流表项，并且指定该数据包按照该流表项的action列表处理。但是并不是所有的数据包都需要向交换机中添加一条流表项来匹配处理，网络中还存在多种数据包，它出现的数量很少（如ARP,IGMP等），以至于没有必要通过流表项来指定这一类数据包的处理法，此时控制器可以使用packet-out消息，告诉交换机某一个数据包如何处理。
+  \item 控制器收到packet-in消息后，可以发送flow-mod消息向交换机写一个流表项，并且将flow-mod消息中buffer-id字段设置为packet-in消息中的buffer-id值。从而控制器向交换机写入了一条与数据包相关的流表项，并且指定该数据包按照该流表项的action列表处理。但是并不是所有的数据包都需要向交换机中添加一条流表项来匹配处理，网络中还存在多种数据包，它出现的数量很少（如ARP,IGMP 等），以至于没有必要通过流表项来指定这一类数据包的处理法，此时控制器可以使用packet-out消息，告诉交换机某一个数据包如何处理。
 \end{enumerate}
 \subsubsection{OVS}
 Open vSwitch是一个由Nicira Networks主导的开源项目，通过运行在虚拟化平台上的虚拟交换机，为本台物理机上的VM提供二层网络接入， 跟云中的其它物理交换机一样工作在Layer 2层。Open vSwitch充分考虑了在不同虚拟化平台间的移植性，采用平台无关的C语言开发。并且遵循Apache2.0许可；我们有传统的物理交换机，为什么还要开发Open vSwitch呢？\\
-在传统数据中心中，网络管理员习惯了每台物理机的网络接入均可见并且可配置。通过在交换机某端口的策略配置，可以很好控制指定物理机的网络接入，访问策略，网络隔离，流量监控，数据包分析，Qos配置，流量优化等。但是在云平台上，如果没有网络虚拟化技术的支持，管理员只能看到被桥接的物理网卡，其上川流不息地跑着n台VM的数据包。仅凭物理交换机支持,管理员无法区分这些包属于哪个OS 哪个用户。而且难以满足以下需求：
+在传统数据中心中，网络管理员习惯了每台物理机的网络接入均可见并且可配置。通过在交换机某端口的策略配置，可以很好控制指定物理机的网络接入，访问策略，网络隔离，流量监控，数据包分析，Qos 配置，流量优化等。但是在云平台上，如果没有网络虚拟化技术的支持，管理员只能看到被桥接的物理网卡，其上川流不息地跑着n台VM 的数据包。仅凭物理交换机支持,管理员无法区分这些包属于哪个OS 哪个用户。而且难以满足以下需求：
 \begin{description}
   \item[网络隔离] 物理网络管理员早已习惯了把不同的用户组放在不同的VLAN中，例如研发部门、销售部门、财务部门，做到二层网络隔离。Open vSwitch通过在host上虚拟出一个软件交换机，等于在物理交换机上级联了一台新的交换机，所有VM通过级联交换机接入，让管理员能够像配置物理交换机一样把同一台host上的众多VM分配到不同VLAN中去；
   \item[QoS配置] 在共享同一个物理网卡的众多VM中，我们期望给每台VM配置不同的速度和带宽，以保证核心业务VM的网络性能。通过在Open vSwitch端口上，给各个VM配置QoS，可以实现物理交换机的traffic queuing和traffic shaping功能。
@@ -174,7 +174,7 @@ Open vSwitch 引入了以下模块，很好地满足以上需求：
     \caption{OVS工作流图}
 \end{figure}
 
-当Open vSwitch的一个接口收到数据包后，会按照上述流程图处理：收到数据包后，会交给datapath内核模块处理，当匹配到对应的datapath会直接输出，如果没有匹配到，会交给用户态的ovs-vswitchd查询flow，用户态处理后，会把处理完的数据包输出到正确的端口，并且设置新的datapath规则，后续数据包可以通过新的datapath规则实现快速转发。
+当Open vSwitch的一个接口收到数据包后，会按照上述流程图处理：收到数据包后，会交给datapath内核模块处理，当匹配到对应的datapath 会直接输出，如果没有匹配到，会交给用户态的ovs-vswitchd查询flow，用户态处理后，会把处理完的数据包输出到正确的端口，并且设置新的datapath规则，后续数据包可以通过新的datapath规则实现快速转发。
 
 \section{基于Coflow的大数据网络优化}
 \subsection{coflow相关知识介绍}
@@ -241,6 +241,11 @@ varys是交换结构，考虑无阻塞的情况。\\
 搭建基于floodlight的SDN开发环境，进行网络的控制；\\
 
 将多个虚拟交换机ovs挂载到了floodlight控制器上\\
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=3.5in]{FL_Web_UI.png}\relax
+    \caption{Flooglight的Web界面}
+\end{figure}
 
 利用ovs完成hadoop平台上的数据导流工作
 
@@ -251,6 +256,7 @@ varys是交换结构，考虑无阻塞的情况。\\
     \let\c@\includegraphics[height=3.5in]{topology.png}\relax
     \caption{网络拓扑结构}
 \end{figure}
+
 
 \section{系统设计与开发}
 \subsection{系统整体架构设计}
@@ -317,16 +323,35 @@ Packet-in 数据包是 OpenFlow 协议中当交换机没有对应的匹配流表
 但是，由于 Floodlight 目前扔在进一步开发中，功能并不完善。我们额外采用了 OVS 的一些特性进行一些特殊操作，比如直接对 OVS 交换机进行流表操作而不经过 Floodlight，这样我们得以实现一些特殊的功能比如下发 actions=normal（Floodlight 无法直接下发之类特殊操作）。
 
 \section{项目的成果}
+\subsection{实验仿真测试}
 
-\subsubsection{实验结果}
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=3.5in]{real_topo.png}\relax
+    \caption{实验测试网络拓扑结构}
+\end{figure}
+
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=3.5in]{host_real_flow.png}\relax
+    \caption{服务器上的实时流量状况}
+\end{figure}
+
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=3.5in]{PyCon_running.png}\relax
+    \caption{PyCon的运行情况}
+\end{figure}
+
+\subsection{实验结果}
 由于我们主要进行的是 Hadoop 的 Shuffle 网络优化，我们选择了实际应用和测试中网络传输量最大的 TeraSort 进行测试。\\
-TeraSort 是 Hadoop MapReduce 上的一个典型的采用 Map-Reduce 架构的范例程序。通常的大规模数据集群中也会采用 1TB（1024GB） 的数据集大小对数据中心性能进行测试。但由于我们的系统规模不大，仅4台服务器与4台交换机，并且是在新颖的 SDN 架构上对 Hadoop 大数据应用的研究，我们采用的数据集大小仅为 4GB。
+TeraSort 是 Hadoop MapReduce 上的一个典型的采用 Map-Reduce 架构的范例程序。通常的大规模数据集群中也会采用 1TB（1024GB） 的数据集大小对数据中心性能进行测试。但由于我们的系统规模不大，仅4 台服务器与4台交换机，并且是在新颖的 SDN 架构上对 Hadoop 大数据应用的研究，我们采用的数据集大小仅为 4GB。
 
 实验参数：数据中心内部所有连接速率均为 1 Gbps，关闭了 MapReduce 的 Map 数据压缩选项，生成排序内容时的数据分块大小为 4（对应 4 台 Host）。实际排序时，所使用的 Map Container 的数量为 32 个（视为 32 个分块）。
 
 由于我们是在测试 SDN 对整体应用性能的优化效果，我们对 TeraSort 排序的总运行时间进行了测定，从提交任务、分配任务到 Reduce 结果返回结果。实验结果表明，未启用 PyCon 时，完成数据排序的时间平均为 203 秒；启用 PyCon 后，数据排序操作时间平均为 193 秒，约有 5\% 的性能提升。
 
-\subsubsection{结果分析}
+\subsection{结果分析}
 提升性能的因素有以下几点：
 缓解了直接套用 SDN 网络而不进行有效配置时 TCP 重传导致的网络拥塞；
 Floodlight 默认并不会进行负载均衡操作，而 PyCon 采用的算法集成了负载均衡的功能，使得传输效率大大提升。
@@ -338,9 +363,9 @@ Floodlight 默认并不会进行负载均衡操作，而 PyCon 采用的算法�
 在 Reduce 阶段，有且仅有一个容器可以进行工作，进行各个排序子块数据的合并，导致 Reduce 步骤本身在整个任务运行时间中所占的比重较大，而传输时间是一个小量。
 
 \section{项目总结}
-(1).当前coflow中所有的flow都是同时出现的。考虑到实际MR中task的启动时间、map完成时间都是不相同不确定的，带来的现实情况是coflow中的flow 很大可能是不同时出现的。所以我们想采用simulator完成简单的various-start-time-coflow调度工作
+(1).当前coflow中所有的flow都是同时出现的。考虑到实际MR中task的启动时间、map完成时间都是不相同不确定的，带来的现实情况是coflow 中的flow 很大可能是不同时出现的。所以我们想采用simulator完成简单的various-start-time-coflow调度工作
 (2). 将上述工作用varys实现，并采用ovs完成数据导流工作，实现整个实际平台的运行，并测试结果，对比分析。
-(3).考虑更多的研究方向，如：各个coflow/flow的依赖性，除了network层面的coflow调度，把task执行联合考虑进来，例如把task尽量放到所需data的机器上。\\
+(3).考虑更多的研究方向，如：各个coflow/flow的依赖性，除了network 层面的coflow调度，把task执行联合考虑进来，例如把task尽量放到所需data的机器上。\\
 SDN性能瓶颈分析
 通过分析sdn网络的工作流程，可知控制器通过响应packet-in消息发送packet-out/flow-mod消息的速度是非常重要的，它的快慢直接影响了控制器拓扑发现，流表下发，mac地址学习能力，甚至整个网络的性能。而且SDN网络中通常采用反应式流安装，控制器的响应时间直接影响着流安装的处理速度，本文将重点测试在负载不同的情况下控制器处理packet-in消息的吞吐量和响应时间。同时也关注控制器支持创建openflow连接的能力与拓扑更新的速度。
 \section{参考文献}
