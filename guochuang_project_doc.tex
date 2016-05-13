@@ -117,7 +117,7 @@ MapReduce架构的大数据处理的操作流程如下：
 \end{enumerate}
 
 \subsubsection{Shuffle阶段}
-整体的Shuffle过程包含以下几个部分：Map端Shuffle、Sort阶段、Reduce 端Shuffle。即是说：Shuffle 过程横跨 map 和 reduce 两端，中间包含 sort 阶段。
+之前我们说shuffle阶段是制约大数据处理的网络瓶颈，下面我们将对Mapreduce的shuffle阶段进行详细的介绍。整体的Shuffle过程包含以下几个部分：Map 端Shuffle、Sort 阶段、Reduce 端Shuffle。 即是说：Shuffle 过程横跨 map 和 reduce 两端，中间包含 sort 阶段。
 
 \begin{figure}[!htb]
     \centering
@@ -168,7 +168,7 @@ Open vSwitch 引入了以下模块，很好地满足以上需求：
   \item  tcpdump的补丁 --- 解析OpenFlow的消息；
 \end{enumerate}
 
-\begin{figure}[!htb]
+\begin{figure}[ht]
     \centering
     \let\c@\includegraphics[height=3.5in]{ovs_work_procedure.png}\relax
     \caption{OVS工作流图}
@@ -178,40 +178,90 @@ Open vSwitch 引入了以下模块，很好地满足以上需求：
 
 \section{基于Coflow的大数据网络优化}
 \subsection{coflow相关知识介绍}
-另外考虑到当前数据中心用并行计算的框架处理大规模的数据，有人提出了coflow的概念。coflow是一组相关的并行数据流的集合，coflow的完成时间由最后一条数据流的完成时间决定。
+考虑到当前数据中心用并行计算的框架处理大规模的数据。许多数据密集型的应用都是和网络绑定的，但是对一些特别的通信请求，网络层的优化仍然是不可知道的，这通常会影响到应用层的表现。尽管数据密集型应用的架构有所不同，但是他们的通信相似甚至相同的，都要经过集群之间一系列的连续的计算过程。通常一个通信阶段的所有的流都完成这个通信阶段才算完成。最近提出的coflow的概念就代表一组满足相同的通信请求（最小化完成时间、所有的流满足deadline）并行流的集合，这个可以通过应用感知的网络调度算法实现。更进一步，我们可以通过优化coflow的完成时间整个任务的响应时间。\\
+为什么说考虑coflow级别的调度算法有利于优化任务的完成时间呢？我们看下面这个例子：
 
 \begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=2in]{coflow_cct.png}\relax
     \caption{coflow完成时间的比较}
 \end{figure}
-此处可详细说明一下这个例子\\
-有人设计了varys来提高大数据处理过程中网络通信的性能，他们以最小化完成时间和满足deadline为目标实现了FIFO、SCF和SEBF等启发式算法。采用varys 仿真器coflowsim完成Facebook真实数据的调度测试。\\
-coflow研究现状中存在的问题：
+在本例中，Coflow1用黑色表示，含有一条流，需要1个单位时间传输完成；Coflow2用黄色表示，含有两条流，一条流flow1需要6个单位时间传输完成，另一条流flow2需要2个单位时间传输完成。Coflow1的一条流和Coflow2的flow2公用资源。如果在流级别按照最短处理时间优先的调度算法（Figure 5的左侧图），Coflow1的完成时间为5，Coflow2的完成时间为6；若我们采用Coflow级别的调度算法，按照Coflow的最短完成时间调度，我们会发现虽然Coflow2的完成时间仍然为6，但是Coflow1的完成时间变为了3，从而缩短了Coflow的平均完成时间。\\
+有人设计了varys来提高大数据处理过程中网络通信的性能，他们以最小化Coflow的完成时间和满足deadline为目标实现了FIFO、SCF和SEBF等启发式算法。采用varys 仿真器coflowsim完成Facebook真实数据的调度测试。他们采用的是交换结构，如下图：
+
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=2in]{varys_switch.png}\relax
+    \caption{varys中的交换结构}
+\end{figure}
+上面是一个交换结构，考虑的是无阻塞的网络，也就是说：不管网络处于何种状态，任何时刻都可以在交换网络中建立一个连接，只要这个连接的起点、终点是空闲的，而不会影响网络中已建立起来的连接。对于数据中心网络来说，无阻塞就是实现任意服务器之间可以线速交互流量的方式，作为数据中心交换机，无阻塞可以支撑数据中心网络内部大量的内部流量，满足这些流量的高效传输。
+\subsection{coflow调度算法设计}
+varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算法考虑路由，在COflow级别我们考虑最小化Coflow的完成时间，在Coflow内部的flow级别，我们考虑最大流优先，最短路径路由。具体算法如下：
+
+\begin{algorithm}[H]
+    \caption{最小化coflow的完成时间的调度算法}
+    \label{alg:min_cct_Algo} % 贴上标签以便交叉引用
+    \begin{algorithmic}[1]  % 这个 1 表示每一行都显示数字
+    \STATE 生成Coflow任务  
+    \FOR{$t=0;t\le M; t\rightarrow t + 1$}
+        \IF{当前部署的任务流已经处理完成}
+            \STATE 释放网络资源；
+        \ENDIF
+        \STATE 统计当前时刻到达的Coflow；
+        \IF{有Coflow到达}
+            \STATE 根据当前资源，调用流级别的调度算法MFF-SP\ref{alg:MFF_SP_Algo}，计算Coflow的完成时间；
+            \STATE 根据Coflow的完成时间，进行升序排序；
+            \STATE Coflow完成时间最短的先部署
+            \STATE 更新网络资源
+        \ELSE
+            \STATE 进入下一个时刻
+        \ENDIF      
+    \ENDFOR
+    \end{algorithmic}
+\end{algorithm}
+\noindent\hrule
+\vspace{0.1em}\noindent\hrule
+
+\begin{algorithm}[H]
+    \caption{流级别的调度算法——最大流优先最短路径路由（MFF-SP）}
+    \label{alg:MFF_SP_Algo} % 贴上标签以便交叉引用
+    \begin{algorithmic}[1]  % 这个 1 表示每一行都显示数字
+    \STATE 调用当前网络拓扑
+    \STATE 对Coflow中的所有flow按照flow数据量大小，降序排列；
+    \FOR{$flow=0;flow\le flow_number; flow\rightarrow flow + 1$}
+        \IF{flow正在等待调度}
+            \STATE 根据flow的源和目的节点利用最短路径计算其路由路径；
+            \STATE 找到路由路径中剩余带宽最少的link；
+            \STATE 根据剩余带宽最少的link的带宽计算Coflow的最小完成时间；
+        \ELSE
+            \STATE 进行下一条流的计算
+        \ENDIF
+    \ENDFOR
+    \end{algorithmic}
+\end{algorithm}
+\noindent\hrule
+\vspace{0.1em}\noindent\hrule
+\subsection{coflow调度算法的性能表现}
+用matlab仿真，跑一些简单的结果，分析性能
+\subsection{coflow研究现状中存在的问题}
 \begin{enumerate}
   \item 当前coflowsim中的调度策略都假设所有的flow都是同时出现，不太符合实际情况
   \item 当前的各种启发式算法都是在coflowsim中实现的，还没有用varys调度真实的Facebook数据流，
   \item 当前coflow的两层架构：inter-transfer负责多个transfer间的资源调度，intra-transfer负责一个transfer内的调度。inter-transfer策略主要是加权共享，并没有考虑多个flow间的dependency。
 \end{enumerate}
-\subsection{coflow调度算法设计}
-介绍我们实现的coflow调度算法\\
-考虑路由\\
-路由算法，最短路径路由，
-负载均衡/ECMP/多路径路由\\
-varys是交换结构，考虑无阻塞的情况。\\
-用matlab仿真，跑一些简单的结果，分析性能
 
 \section{实验平台搭建}
 \subsection{实验环境}
-\begin{figure}[!htb]
+
+\begin{figure}[ht]
     \centering
     \let\c@\includegraphics[height=2.5in,angle=-90]{experiment_environment1.JPG}\relax
     \let\c@\includegraphics[height=2.5in,angle=-90]{experiment_environment2.JPG}\relax
     \caption{真实的实验环境}
 \end{figure}
-服务器的性能：机器的型号，内存大小，网卡
 
-\begin{table}[ht]
+服务器的性能：机器的型号，内存大小，网卡
+\begin{table}[!htb]
 \caption{系统软硬件及协议配置} \label{table:confg}
 \centering
 \begin{tabular}{|c|c|c|}
@@ -284,7 +334,8 @@ Hadoop 内嵌了 HTTP 服务器 Jetty，主要有以下两方面的作用
 \end{enumerate}
 
 \subsubsection{配置队列，进行限速}
-为了实现最小瓶颈算法，我们编写了一个 OVS 队列配置模块，可以在 PyCon 启动时自动完成队列的配置操作，以供算法使用。
+网络研究主要通过两个途径提高QoS：一个是节点控制；另一个是网络控制。节点控制的策略包括流量整形、节点缓冲区管理、队列调度等。网络控制通过对路由的控制来提高网络的性能，其目标是为进入网络的数据流（业务）选择满足其服务质量要求的路径，同时保证网络资源的有效利用。\\
+为了提供更好的QoS，我们编写了一个 OVS 队列配置模块来实现最小瓶颈算法，可以在 PyCon 启动时自动完成队列的配置操作，以供算法使用。
 
 \subsubsection{获取网络信息}
 采用 Floodlight REST API 获取当前受控制的 SDN 网络的带宽使用信息等。不过，直接调用 REST API 获取到的信息不是直接可用的，而是一个 JSON 格式的文本串。我们编写了一段程序将其自动转化为便于处理的矩阵形式。
