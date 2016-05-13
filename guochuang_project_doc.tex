@@ -243,23 +243,15 @@ varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算
 \vspace{0.1em}\noindent\hrule
 \subsection{coflow调度算法的性能表现}
 用matlab仿真，跑一些简单的结果，分析性能
-\subsection{coflow研究现状中存在的问题}
-\begin{enumerate}
-  \item 当前coflowsim中的调度策略都假设所有的flow都是同时出现，不太符合实际情况
-  \item 当前的各种启发式算法都是在coflowsim中实现的，还没有用varys调度真实的Facebook数据流，
-  \item 当前coflow的两层架构：inter-transfer负责多个transfer间的资源调度，intra-transfer负责一个transfer内的调度。inter-transfer策略主要是加权共享，并没有考虑多个flow间的dependency。
-\end{enumerate}
 
 \section{实验平台搭建}
 \subsection{实验环境}
-
 \begin{figure}[ht]
     \centering
     \let\c@\includegraphics[height=2.5in,angle=-90]{experiment_environment1.JPG}\relax
     \let\c@\includegraphics[height=2.5in,angle=-90]{experiment_environment2.JPG}\relax
     \caption{真实的实验环境}
 \end{figure}
-
 服务器的性能：机器的型号，内存大小，网卡
 \begin{table}[!htb]
 \caption{系统软硬件及协议配置} \label{table:confg}
@@ -284,30 +276,65 @@ varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算
   \hline
 \end{tabular}
 \end{table}
-
 \subsection{Hadoop平台搭建}
 我们使用了4台 Xeon E5620 64GB RAM 服务器作为我们的 YARN MapReduce 任务执行节点，并对 YARN、Mapreduce 以及 HDFS 进行了配置。
 
 为了使得整个平台的数据流量只走我们的 SDN 网络，我们分别对如下文件进行了如下配置：
-图1
 
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=1.5in]{profile_list_212.png}\relax
+    \caption{以服务器212为例，配置文件清单}
+\end{figure}
 YARN 平台配置文件 yarn-site.xml\\
-1.设置 YARN 默认允许使用的系统资源量，若不进行设置，则只能使用 16GB 内存；图2\\
-2.固定 Node Manager 的地址为本机 OpenFlow 网段IP（of-IPL212）；图3\\
-3.固定 Resource Manager 的地址为 Master 的 OpenFlow 网段IP（of-master）；图4
+1.设置 YARN 默认允许使用的系统资源量，若不进行设置，则只能使用 16GB 内存；
+
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=2in]{profile_yarn_resource.png}\relax
+    \caption{yarn配置，允许使用的资源}
+\end{figure}
+2.固定 Node Manager 的地址为本机 OpenFlow 网段IP（of-IPL212）；
+
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=2in]{profile_yarn_nodemanager.png}\relax
+    \caption{yarn 配置，指定nodemanager地址}
+\end{figure}
+3.固定 Resource Manager 的地址为 Master 的 OpenFlow 网段IP（of-master）；
+
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=3in]{profile_yarn_resourcemanager.png}\relax
+    \caption{yarn配置 指定resourcemanager地址}
+\end{figure}
 \bigskip
 
 MapReduce 配置 mapred-site.xml\\
-设置单个 Map 和 Reduce 任务可以占用的内存大小，防止单个任务的所需内存不足或分块任务太多而导致整体速率下降；图5
+设置单个 Map 和 Reduce 任务可以占用的内存大小，防止单个任务的所需内存不足或分块任务太多而导致整体速率下降；
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=2in]{MR_yarn_manage_task.png}\relax
+    \caption{MR设置使用yarn管理tasks，单个task占用内存大小}
+\end{figure}
 \bigskip
 
 HDFS 配置 hdfs-site.xml\\
-设置强制所有 HDFS 客户端只监听 OpenFlow 端的端口（默认是0.0.0.0全部监听），避免数据流量进入控制网络。图6
+设置强制所有 HDFS 客户端只监听 OpenFlow 端的端口（默认是0.0.0.0全部监听），避免数据流量进入控制网络。
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=2.5in]{HDFS_flowto_SDN.png}\relax
+    \caption{HDFS强制流量走SDN网络}
+\end{figure}
 \bigskip
 
 Master-Slave 关系配置\\
 在主节点 Master 上的 slaves 文件中加入所有服务器的列表。图7
-
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=1.5in]{slaves.png}\relax
+    \caption{slaves}
+\end{figure}
 
 
 \subsection{SDN开发环境搭建}
@@ -398,19 +425,16 @@ Packet-in 数据包是 OpenFlow 协议中当交换机没有对应的匹配流表
 
 \section{项目的成果}
 \subsection{实验仿真测试}
-
 \begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=3.5in]{real_topo.png}\relax
     \caption{实验测试网络拓扑结构}
 \end{figure}
-
 \begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=3.5in]{host_real_flow.png}\relax
     \caption{服务器上的实时流量状况}
 \end{figure}
-
 \begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=3.5in]{PyCon_running.png}\relax
@@ -422,6 +446,12 @@ Packet-in 数据包是 OpenFlow 协议中当交换机没有对应的匹配流表
 TeraSort 是 Hadoop MapReduce 上的一个典型的采用 Map-Reduce 架构的范例程序。通常的大规模数据集群中也会采用 1TB（1024GB） 的数据集大小对数据中心性能进行测试。但由于我们的系统规模不大，仅4 台服务器与4台交换机，并且是在新颖的 SDN 架构上对 Hadoop 大数据应用的研究，我们采用的数据集大小仅为 4GB。
 
 实验参数：数据中心内部所有连接速率均为 1 Gbps，关闭了 MapReduce 的 Map 数据压缩选项，生成排序内容时的数据分块大小为 4（对应 4 台 Host）。实际排序时，所使用的 Map Container 的数量为 32 个（视为 32 个分块）。
+
+\begin{figure}[!htb]
+    \centering
+    \let\c@\includegraphics[height=3in]{experiment_result.png}\relax
+    \caption{实验测试结果}
+\end{figure}
 
 由于我们是在测试 SDN 对整体应用性能的优化效果，我们对 TeraSort 排序的总运行时间进行了测定，从提交任务、分配任务到 Reduce 结果返回结果。实验结果表明，未启用 PyCon 时，完成数据排序的时间平均为 203 秒；启用 PyCon 后，数据排序操作时间平均为 193 秒，约有 5\% 的性能提升。
 
