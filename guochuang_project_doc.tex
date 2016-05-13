@@ -338,13 +338,19 @@ Master-Slave 关系配置\\
 
 
 \subsection{SDN开发环境搭建}
-搭建基于floodlight的SDN开发环境，进行网络的控制；\\
+交换机采用 Open vSwitch，运行在 Ubuntu Linux 下。控制器采用 Floodlight，获取和控制整个 SDN 网络，并且与我们的 PyCon 进行通信。\\
 
-将多个虚拟交换机ovs挂载到了floodlight控制器上\\
+将多个虚拟交换机ovs挂载到了floodlight控制器上，同时保留一个被动监听端口以供 PyCon 进行额外的操作：\\
+ovs-vsctl set-controller ovsbridgename tcp:floodlight-ip:6633 ptcp:6666
+\bigskip
+
+允许远程控制虚拟交换机控制器，以便 PyCon 控制：\\
+ovs-vsctl set-manager ptcp:6640 \\
+
 \begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=3.5in]{FL_Web_UI.png}\relax
-    \caption{Flooglight的Web界面}
+    \caption{Floodlight Web 监视界面}
 \end{figure}
 
 利用ovs完成hadoop平台上的数据导流工作
@@ -354,7 +360,7 @@ Master-Slave 关系配置\\
 \begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=3.5in]{topology.png}\relax
-    \caption{网络拓扑结构}
+    \caption{完整详细的网络拓扑结构}
 \end{figure}
 
 
@@ -367,7 +373,7 @@ Master-Slave 关系配置\\
     \caption{基于SDN+Hadoop的系统架构设计}
 \end{figure}
 
-\subsection{Mapreduce Fetcher}
+\subsection{MapReduce Fetcher}
 
 Map任务结束之后，主要进行Copy、Sort、Reduce三个步骤；其中Copy阶段，就是从执行各个Map任务的节点获取map的输出文件。这是由ReduceTask.ReduceCopier 类来负责。ReduceCopier对象负责将Map函数的输出拷贝至Reduce所在机器。在这个过程中，Reduce 进程会启动一些数据复制线程 (Fetcher)，通过 HTTP GET 方法请求由 HTTP Server 管理的 Shuffle 数据块，这些数据块是先前成功完成的 Map Task 的输出文件。这些等待 Shuffle 的数据块可能在内存中也有可能在 HDFS 中，取决于服务器当前的内存是否充足以及对 Hadoop 的配置。如果大小超过一定阈值就写到磁盘，否则放入内存。\\
 为了利用SDN controller建立全局的调度策略，优化代码插入位置，在NM获得全局调度信息而不用这样一个一个发送，以提高效率。我们做出了一个初步可用的 HTTP Client POST，向PyCon控制器（SDN controller）POST必要的数据，如：源主机、目的主机、数据长度以及MapID等信息。
@@ -428,17 +434,17 @@ Packet-in 数据包是 OpenFlow 协议中当交换机没有对应的匹配流表
 \begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=3.5in]{real_topo.png}\relax
-    \caption{实验测试网络拓扑结构}
+    \caption{实验测试网络拓扑结构。此图由 Floodlight 使用生成树算法自动产生，说明拓扑配置无误}
 \end{figure}
 \begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=3.5in]{host_real_flow.png}\relax
-    \caption{服务器上的实时流量状况}
+    \caption{服务器上的实时流量状况。图为刚执行一个 TeraSort 时的网络流量，可以看到四端口总计高达800Mbps的吞吐量}
 \end{figure}
 \begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=3.5in]{PyCon_running.png}\relax
-    \caption{PyCon的运行情况}
+    \caption{PyCon的运行情况。调试窗口显示的是 Floodlight 流表下发成功信息}
 \end{figure}
 
 \subsection{实验结果}
