@@ -202,7 +202,7 @@ varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算
     \caption{最小化coflow的完成时间的调度算法}
     \label{alg:min_cct_Algo} % 贴上标签以便交叉引用
     \begin{algorithmic}[1]  % 这个 1 表示每一行都显示数字
-    \STATE 生成Coflow任务  
+    \STATE 生成Coflow任务
     \FOR{$t=0;t\le M; t\rightarrow t + 1$}
         \IF{当前部署的任务流已经处理完成}
             \STATE 释放网络资源；
@@ -215,7 +215,7 @@ varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算
             \STATE 更新网络资源
         \ELSE
             \STATE 进入下一个时刻
-        \ENDIF      
+        \ENDIF
     \ENDFOR
     \end{algorithmic}
 \end{algorithm}
