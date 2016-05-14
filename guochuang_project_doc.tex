@@ -66,11 +66,15 @@
   { \fontsize{15pt}{18pt}\selectfont{\textbf{摘\qquad 要}}}
 \end{center}
 
+我们在软件定义网络平台上针对开源的 Apache Hadoop MapReduce 平台实现了一个可行的调度控制系统，并将 Coflow 的概念引入了大数据平台，建立了控制架构，实现了两个调度算法。我们尝试通过一系列工业优化方法克服 SDN 中高带宽 TCP 应用的难点问题，如包超时重传导致的拥堵。测试结果表明，在使用我们的调度器后，MapReduce 任务的性能在 SDN 环境下提升了 5\%。
+
 { \fontsize{10pt}{15pt}\selectfont{\textbf{关键词：}}}云计算，大数据，SDN，HADOOP，网络优化
 \clearpage
 \begin{center}
   { \fontsize{15pt}{18pt}\selectfont{\textbf{ABSTRACT}}}
 \end{center}
+
+
 
 { \fontsize{10pt}{15pt}\selectfont{\textbf{KEY WORDS：}}}Cloud computing，Bigdata，SDN，HADOOP，network optimization
 \clearpage
@@ -406,7 +410,7 @@ SDN 网络配置流表相比较常规网络较为缓慢，因为当一个数据�
 我们从修改过的 Hadoop Fetcher 模块和 Floodlight 控制器货物获取即将开始传输的 Flow 的信息，然后调用路径计算模块进行路由规划。目前，PyCon 路径计算模块实现了以下两种路由算法：\\
 
 \subsubsection{Coflow 调度}
-我们从 Hadoop Fetcher 获得了任务的 Job 编号，用于识别 Coflow 信息。然后在采用最小瓶颈算法时将不同的 Coflow 装入不同的队列实现流速控制。\\
+我们从 Hadoop Fetcher 获得了任务的 Job 编号，用于识别 Coflow 信息。然后在采用最小瓶颈算法时将不同的 Coflow 装入不同的队列实现流速控制。但是在实际实现中遇到了一些瓶颈，因此我们先以 MATLAB 仿真结果作为展示。\\
 
 
 1.加权最短路径算法\\
