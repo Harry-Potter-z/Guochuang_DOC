@@ -242,8 +242,14 @@ varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算
 \noindent\hrule
 \vspace{0.1em}\noindent\hrule
 \subsection{coflow调度算法的性能表现}
-用matlab仿真，跑一些简单的结果，分析性能
+我们完成了两种Coflow调度算法的设计：
+\begin{enumerate}
+  \item 先来的先调度（FCFS: first come first scheduling）
+  \item 最小化Coflow的完成时间（MCCTF: minimum cct (coflow completion time) first）
+\end{enumerate}
+针对两种算法我们跑了一些仿真结果：
 
+分析了Coflow的完成时间和带宽利用率
 \section{实验平台搭建}
 \subsection{实验环境}
 \begin{figure}[ht]
