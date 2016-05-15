@@ -88,7 +88,7 @@ Parallel processing in Big Data is a trend nowadays. And network is a bottleneck
 \subsection{研究方向}
 \begin{description}
   \item[软件定义网络（SDN）] 软件定义网络（SDN）是当前和未来网络研究的一个重要方向，通过将网络的数据转发层和逻辑控制层分离，提高了网络的灵活性和可编程性。可以在控制层面设计应用感知的控制策略，如网络接入、数据转发路由、流量工程等，从而提高应用的性能。因此，我们拟通过SDN来优化云平台上大数据框架的网络性能。
-  \item[coflow调度] 考虑到当前数据中心用并行计算的框架处理大规模的数据，充分考虑数据流的相关性（coflow），设计调度算法
+  \item[coflow调度] 考虑到当前数据中心用并行计算的框架处理大规模的数据，充分考虑数据流的相关性（coflow），设计调度算法来加快大数据处理的速度，缩短任务的完成的时间。
 \end{description}
 \section{项目平台的选择}
 \subsection{Hadoop}
@@ -111,6 +111,8 @@ Hadoop的设计思路源于Google的GFS和MapReduce。它是一个开源软件�
     \let\c@\includegraphics[height=2in]{mapreduce.png}\relax
     \caption{Mapreduce计算框架}
 \end{figure}
+
+\vspace{1.5em}
 MapReduce架构的大数据处理的操作流程如下：
 \begin{enumerate}
   \item 首先调用MapReduce库的输入流模块，将输入文件分成M个数据片度，每个数据片段的大小可以通过可选的参数来控制。然后用户程序在机群中创建大量的程序副本。程序副本中包含一个特殊的master程序。其它的程序都是worker程序，由master分配任务。有M个Map任务和R个Reduce任务将被分配，master将一个Map任务或Reduce任务分配给一个空闲的worker。
@@ -407,7 +409,7 @@ ovs-vsctl set-manager ptcp:6640
 
 %利用ovs完成hadoop平台上的数据导流工作
 \subsection{网络拓扑}
-通过hadoop以及SDN开发环境的搭建，我们构造了如下图（Figure\ref{fig:topology}）
+通过hadoop以及SDN开发环境的搭建，我们构造了如下图（Figure\ref{fig:topology}），整个拓扑包括四个OVS交换机以及四台服务器。
 
 \begin{figure}[!htb]
     \centering
@@ -422,16 +424,17 @@ ovs-vsctl set-manager ptcp:6640
     \centering
     \let\c@\includegraphics[height=3in]{work_arch.jpg}\relax
     \caption{基于SDN+Hadoop的系统架构设计}
+    \label{fig:work_arch}
 \end{figure}
 %在下面详细描述一下系统架构图的运行流程，描述一下各个模块之间的工作流程
-从系统架构图可以看到，PyCon 作为我们的中心调度器，与诸多组件有通信：
-1. 在 PyCon 启动时，会调用 OVS 远程接口对各个 OVS 交换机进行队列的直接配置，以及初始流表的下发;
-2. PyCon 的 HTTP Server 模块从 Hadoop 和 Floodlight 插件处获取 HTTP POST 信息，里面包含调度流时所必须的一些信息;
-3. 当 HTTP Server 收到一个完整的流信息，便会执行算法模块，然后调用流表下发 API 进行铺路。
-4. PyCon 内部另有一个定时模块，每秒从 Floodlight 获取实时的网络带宽信息。
-
-OVS 交换机会将匹配 actions=controller 的包以 packet in 的形式上传到 Floodlight 控制器，然后我们编写的 Floodlight 插件会对这个包进行分析并将需要的信息发送给 PyCon。
-
+从系统架构图（Figure \ref{fig:work_arch}）可以看到，PyCon 作为我们的中心调度器，与诸多组件有通信,整个架构的工作流程如下：
+\begin{enumerate}
+  \item 在 PyCon 启动时，会调用 OVS 远程接口对各个 OVS 交换机进行队列的直接配置，以及初始流表的下发;
+  \item PyCon 的 HTTP Server 模块从 Hadoop 和 Floodlight 插件处获取 HTTP POST 信息，里面包含调度流时所必须的一些信息;
+  \item 当 HTTP Server 收到一个完整的流信息，便会执行算法模块，然后调用流表下发 API 进行铺路。
+  \item PyCon 内部另有一个定时模块，每秒从 Floodlight 获取实时的网络带宽信息。OVS 交换机会将匹配 actions=controller 的包以 packet in 的形式上传到 Floodlight 控制器，然后我们编写的 Floodlight 插件会对这个包进行分析并将需要的信息发送给 PyCon。
+\end{enumerate}
+下面的几个小节我们将具体讲述各个模块的具体工作。
 \subsection{MapReduce Fetcher}
 Map任务结束之后，主要进行Copy、Sort、Reduce三个步骤；其中Copy阶段，就是从执行各个Map任务的节点获取map的输出文件。这是由ReduceTask.ReduceCopier 类来负责。ReduceCopier对象负责将Map函数的输出拷贝至Reduce所在机器。在这个过程中，Reduce 进程会启动一些数据复制线程 (Fetcher)，通过 HTTP GET 方法请求由 HTTP Server 管理的 Shuffle 数据块，这些数据块是先前成功完成的 Map Task 的输出文件。这些等待 Shuffle 的数据块可能在内存中也有可能在 HDFS 中，取决于服务器当前的内存是否充足以及对 Hadoop 的配置。如果大小超过一定阈值就写到磁盘，否则放入内存。\\
 为了利用SDN controller建立全局的调度策略，优化代码插入位置，在NM获得全局调度信息而不用这样一个一个发送，以提高效率。我们做出了一个初步可用的 HTTP Client POST，向PyCon控制器（SDN controller）POST必要的数据，如：源主机、目的主机、数据长度以及MapID等信息。
@@ -533,7 +536,7 @@ Floodlight 默认并不会进行负载均衡操作，而 PyCon 采用的算法�
 SDN性能瓶颈分析
 
 通过分析sdn网络的工作流程，可知控制器通过响应packet-in消息发送packet-out/flow-mod消息的速度是非常重要的，它的快慢直接影响了控制器拓扑发现，流表下发，mac地址学习能力，甚至整个网络的性能。而且SDN网络中通常采用反应式流安装，控制器的响应时间直接影响着流安装的处理速度，本文将重点测试在负载不同的情况下控制器处理packet-in消息的吞吐量和响应时间。同时也关注控制器支持创建openflow连接的能力与拓扑更新的速度。
-(4).虽然我们引用了 Coflow 概念并在系统中进行了实现，但是由于在测试环境中同一时间只运行了一个任务。
+
 \section{项目总结}
 在本项目中我们以优化大数据处理性能为背景，将注意力集中到网络性能的优化。最初我们希望基于openstack平台，利用Ryu SDN控制器集中管理数据中心中的虚拟机，来优化大数据处理的性能，基于这个想法，我们提出以下几方面的研究方案：
 
