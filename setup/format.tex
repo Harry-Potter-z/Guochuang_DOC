@@ -143,44 +143,44 @@
 \makeatother
 
 %%%%%%%%%%%% References %%%%%%%%%%%%%%%%%
-\renewcommand{\bibname}{参考文献}
-% 重定义参考文献样式，来自thu
-\makeatletter
-\renewenvironment{thebibliography}[1]{
-    \titleformat{\chapter}{\raggedright\sihao\hei}{\chaptername}{2em}{}
-   \chapter*{\bibname}
-   \wuhao
-   \list{\@biblabel{\@arabic\c@enumiv}}
-        {\renewcommand{\makelabel}[1]{##1\hfill}
-         \settowidth\labelwidth{0 cm}
-         \setlength{\labelsep}{0pt}
-         \setlength{\itemindent}{0pt}
-         \setlength{\leftmargin}{\labelwidth+\labelsep}
-         \addtolength{\itemsep}{-0.7em}
-         \usecounter{enumiv}
-         \let\p@enumiv\@empty
-         \renewcommand\theenumiv{\@arabic\c@enumiv}}
-    \sloppy\frenchspacing
-    \clubpenalty4000
-    \@clubpenalty \clubpenalty
-    \widowpenalty4000
-    \interlinepenalty4000
-    \sfcode`\.\@m}
-   {\def\@noitemerr
-     {\@latex@warning{Empty `thebibliography' environment}}
-    \endlist\frenchspacing}
-\makeatother
-
-\addtolength{\bibsep}{-0.5em}     % 缩小参考文献间的垂直间距
-\setlength{\bibhang}{2em}         % 每个条目自第二行起缩进的距离
-
-% 参考文献引用作为上标出现
-%\newcommand{\citeup}[1]{\textsuperscript{\cite{#1}}}
-\makeatletter
-    \def\@cite#1#2{\textsuperscript{[{#1\if@tempswa , #2\fi}]}}
-\makeatother
-%% 引用格式
-\bibpunct{[}{]}{,}{s}{}{,}
+%\renewcommand{\bibname}{参考文献}
+%% 重定义参考文献样式，来自thu
+%\makeatletter
+%\renewenvironment{thebibliography}[1]{
+%    \titleformat{\chapter}{\raggedright\sihao\hei}{\chaptername}{2em}{}
+%   \chapter*{\bibname}
+%   \wuhao
+%   \list{\@biblabel{\@arabic\c@enumiv}}
+%        {\renewcommand{\makelabel}[1]{##1\hfill}
+%         \settowidth\labelwidth{0 cm}
+%         \setlength{\labelsep}{0pt}
+%         \setlength{\itemindent}{0pt}
+%         \setlength{\leftmargin}{\labelwidth+\labelsep}
+%         \addtolength{\itemsep}{-0.7em}
+%         \usecounter{enumiv}
+%         \let\p@enumiv\@empty
+%         \renewcommand\theenumiv{\@arabic\c@enumiv}}
+%    \sloppy\frenchspacing
+%    \clubpenalty4000
+%    \@clubpenalty \clubpenalty
+%    \widowpenalty4000
+%    \interlinepenalty4000
+%    \sfcode`\.\@m}
+%   {\def\@noitemerr
+%     {\@latex@warning{Empty `thebibliography' environment}}
+%    \endlist\frenchspacing}
+%\makeatother
+%
+%\addtolength{\bibsep}{-0.5em}     % 缩小参考文献间的垂直间距
+%\setlength{\bibhang}{2em}         % 每个条目自第二行起缩进的距离
+%
+%% 参考文献引用作为上标出现
+%%\newcommand{\citeup}[1]{\textsuperscript{\cite{#1}}}
+%\makeatletter
+%    \def\@cite#1#2{\textsuperscript{[{#1\if@tempswa , #2\fi}]}}
+%\makeatother
+%%% 引用格式
+%\bibpunct{[}{]}{,}{s}{}{,}
 
 %%%%%%%%%%%% Cover %%%%%%%%%%%%%%%%%
 % 封面、摘要、版权、致谢格式定义
