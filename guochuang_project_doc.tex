@@ -66,7 +66,7 @@
   { \fontsize{15pt}{18pt}\selectfont{\textbf{摘\qquad 要}}}
 \end{center}
 
-我们在软件定义网络平台上针对开源的 Apache Hadoop MapReduce 平台实现了一个可行的调度控制系统，并将 Coflow 的概念引入了大数据平台，建立了控制架构，实现了两个调度算法。我们尝试通过一系列工业优化方法克服 SDN 中高带宽 TCP 应用的难点问题，如包超时重传导致的拥堵。测试结果表明，在使用我们的调度器后，MapReduce 任务的性能在 SDN 环境下提升了 5\%。
+由于当前数据中心用并行计算的框架处理大规模的数据，根据调查发现网络是限制大数据处理性能的一大瓶颈。针对网络问题，我们在软件定义网络平台上针对开源的 Apache Hadoop MapReduce 平台实现了一个可行的调度控制系统，并将 Coflow 的概念引入了大数据平台，建立了控制架构，实现了两个Coflow的调度算法。仿真结果显示我们设计的最小化Coflow完成时间的调度算法要比先到达先服务的调度算法节省10倍左右的Coflow完成时间。进一步我们尝试通过一系列工业优化方法克服 SDN 中高带宽 TCP 应用的难点问题，如包超时重传导致的拥堵以及难以直接从 Hadoop MapReduce 模块中拿到调度流所必须的信息等等。 测试结果表明，在使用我们的调度器后，MapReduce 任务的性能在 SDN 环境下提升了 5\%。
 
 { \fontsize{10pt}{15pt}\selectfont{\textbf{关键词：}}}云计算，大数据，SDN，HADOOP，网络优化
 \clearpage
@@ -115,7 +115,7 @@ MapReduce架构的大数据处理的操作流程如下：
   \item 首先调用MapReduce库的输入流模块，将输入文件分成M个数据片度，每个数据片段的大小可以通过可选的参数来控制。然后用户程序在机群中创建大量的程序副本。程序副本中包含一个特殊的master程序。其它的程序都是worker程序，由master分配任务。有M个Map任务和R个Reduce任务将被分配，master将一个Map任务或Reduce任务分配给一个空闲的worker。
   \item 被分配了map任务的worker程序读取相关的输入数据片段，从输入的数据片段中解析出key/value pair，然后把key/value pair传递给用户自定义的Map函数，由Map函数生成并输出的中间key/value pair，并缓存在内存中。
   \item 缓存中的key/value pair通过调用Partition模块分成R个区域，之后周期性的写入到本地磁盘上。缓存的key/value pair 在本地磁盘上的存储位置将被传给master，由master负责把这些存储位置再传送给Reduce worker。
-  \item 当Reduce worker程序接收到master程序发来的数据存储位置信息后，使用RPC从Map worker所在主机的磁盘上读取这些缓存数据。当Reduce worker读取了所有的中间数据后，通过对key进行排序后使得具有相同key值的数据聚合在一起。由于许多不同的key值会映射到相同的Reduce 任务上，因此必须进行排序。如果中间数据太大无法在内存中完成排序，那么就要在外部进行排序。
+  \item 当Reduce worker程序接收到master程序发来的数据存储位置信息后，使用RPC从Map worker所在主机的磁盘上读取这些缓存数据。当Reduce worker 读取了所有的中间数据后，通过对key进行排序后使得具有相同key值的数据聚合在一起。由于许多不同的key值会映射到相同的Reduce 任务上，因此必须进行排序。如果中间数据太大无法在内存中完成排序，那么就要在外部进行排序。
   \item Reduce worker程序遍历排序后的中间数据，对于每一个唯一的中间key值，Reduce worker程序将这个key值和它相关的中间value值的集合传递给用户自定义的Reduce函数。Reduce函数的输出被追加到所属分区的输出文件。
   \item 当所有的Map和Reduce任务都完成之后，master唤醒用户程序。在这个时候，在用户程序里的对MapReduce调用才返回。在成功完成任务之后，MapReduce的输出存放在R个输出文件中（对应每个Reduce任务产生一个输出文件，文件名由用户指定）。一般情况下，用户不需要将这R个输出文件合并成一个文件–他们经常把这些文件作为另外一个MapReduce的输入，或者在另外一个可以处理多个分割文件的分布式应用中使用。
 \end{enumerate}
@@ -187,6 +187,7 @@ Open vSwitch 引入了以下模块，很好地满足以上需求：
 
 \begin{figure}[!htb]
     \centering
+    \label{fig:coflow_cct}
     \let\c@\includegraphics[height=2in]{coflow_cct.png}\relax
     \caption{coflow完成时间的比较}
 \end{figure}
@@ -226,6 +227,8 @@ varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算
 \noindent\hrule
 \vspace{0.1em}\noindent\hrule
 
+\bigskip
+
 \begin{algorithm}[H]
     \caption{流级别的调度算法——最大流优先最短路径路由（MFF-SP）}
     \label{alg:MFF_SP_Algo} % 贴上标签以便交叉引用
@@ -253,16 +256,42 @@ varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算
 \end{enumerate}
 针对两种算法我们跑了一些仿真结果：
 
-分析了Coflow的完成时间和带宽利用率
+%Coflow平均完成时间图
+\begin{figure}[ht]
+    \centering
+    \let\c@\includegraphics[height=2.5in]{Coflow_cct_fcfs_rate.jpg}\relax
+    \let\c@\includegraphics[height=2.5in]{Coflow_cct_mccft_rate.jpg}\relax
+    \caption{FCFS和MCCFT两种算法的Coflow完成时间对比}
+\end{figure}
+根据图（Figure 7）显示的结果，我们发现在我们调用Coflow调度算法FCFS时，Coflow的完成时间分布在$0~140$个单位时间之间，而在调用我们设计的Coflow调度算法MCCFT 时，在15 个单位时间以内的Coflow 占据全部Coflow 的$95\%$ 以上。
+
+\begin{figure}[ht]
+    \centering
+    \let\c@\includegraphics[height=2.5in]{bw_statistics_fcfs.jpg}\relax
+    \let\c@\includegraphics[height=2.5in]{bw_statistics_mcctf.jpg}\relax
+    \caption{FCFS和MCCFT两种算法的每条链路上的带宽利用率对比}
+\end{figure}
+根据图（Figure 8）显示的结果，我们发现Coflow调度算法MCCFT的链路带宽利用率要比FCFS高出10倍左右
+
+%带宽利用率图
+\begin{figure}[ht]
+    \centering
+    \let\c@\includegraphics[height=2.5in]{Coflow_meancct_twoalgo.jpg}\relax
+    \let\c@\includegraphics[height=2.5in]{bw_utilize_rate_twoalgo.jpg}\relax
+    \caption{FCFS和MCCFT两种算法的Coflow平均带宽利用率以及平均完成时间对比}
+\end{figure}
+根据图（Figure 9）中的显示结果，我们可以看到算法MCCTF的Coflow的完成时间明显比算法FCFS的完成时间短，说明我们设计的算法是有效果的，最小化Coflow 的完成时间的Coflow调度算法确实可以缩短任务的平均完成时间。同时也验证了我们之前对Coflow完成时间优化的分析，如图\ref{fig:coflow_cct}。
+
+综上三组对比图我们发现，我们设计的Coflow调度算法MCCFT相比传统的Flow级别的调度算法更加优越，因为MCCFT可以实现更小的Coflow完成时间，更高的带宽利用率。而且我们发现越是数据密集型的数据，我们的算法优势越是明显
 \section{实验平台搭建}
 \subsection{实验环境}
-\begin{figure}[ht]
+\begin{figure}[!htb]
     \centering
     \let\c@\includegraphics[height=2.5in,angle=-90]{experiment_environment1.JPG}\relax
     \let\c@\includegraphics[height=2.5in,angle=-90]{experiment_environment2.JPG}\relax
     \caption{真实的实验环境}
 \end{figure}
-服务器的性能：机器的型号，内存大小，网卡
+服务器的硬件以及软件的配置：机器的型号，内存大小，网卡，协议版本等等
 \begin{table}[!htb]
 \caption{系统软硬件及协议配置} \label{table:confg}
 \centering
@@ -487,14 +516,23 @@ Floodlight 默认并不会进行负载均衡操作，而 PyCon 采用的算法�
 实际数据中心内部的带宽普遍较大（1 Gbps），普遍在 100MB 以内数据块的传输只需要 1 秒以内就可以完成，即使只走 1 条路，也只需要多几秒便可以传输完成；\\
 在 Reduce 阶段，有且仅有一个容器可以进行工作，进行各个排序子块数据的合并，导致 Reduce 步骤本身在整个任务运行时间中所占的比重较大，而传输时间是一个小量。
 
-\section{项目总结}
-(1).当前coflow中所有的flow都是同时出现的。考虑到实际MR中task的启动时间、map完成时间都是不相同不确定的，带来的现实情况是coflow 中的flow 很大可能是不同时出现的。所以我们想采用simulator完成简单的various-start-time-coflow调度工作
-(2).将上述工作用varys实现，并采用ovs完成数据导流工作，实现整个实际平台的运行，并测试结果，对比分析。
-(3).考虑更多的研究方向，如：各个coflow/flow的依赖性，除了network 层面的coflow调度，把task执行联合考虑进来，例如把task尽量放到所需data的机器上。\\
 SDN性能瓶颈分析
+
 通过分析sdn网络的工作流程，可知控制器通过响应packet-in消息发送packet-out/flow-mod消息的速度是非常重要的，它的快慢直接影响了控制器拓扑发现，流表下发，mac地址学习能力，甚至整个网络的性能。而且SDN网络中通常采用反应式流安装，控制器的响应时间直接影响着流安装的处理速度，本文将重点测试在负载不同的情况下控制器处理packet-in消息的吞吐量和响应时间。同时也关注控制器支持创建openflow连接的能力与拓扑更新的速度。
 (4).虽然我们引用了 Coflow 概念并在系统中进行了实现，但是由于在测试环境中同一时间只运行了一个任务。
+\section{项目总结}
+在本项目中我们以优化大数据处理性能为背景，将注意力集中到网络性能的优化。最初我们希望基于openstack平台，利用Ryu SDN控制器集中管理数据中心中的虚拟机，来优化大数据处理的性能，基于这个想法，我们提出以下几方面的研究方案：
 
+\begin{enumerate}
+  \item 虚拟机的位置优化，动态迁移虚拟机实现负载均衡；
+  \item 设计集中控制调控算法，来实现代码传输、数据传输的协同工作；
+  \item 设计实时算法来调控网络传输路径，实现网络带宽优化；
+  \item 设计实时算法实现数据从硬盘到内存的预加载算法；
+  \item 通过用户态协议栈（DPDK）来加速网络处理；
+\end{enumerate}
+在开发过程中，我们发现这其中的工作量实在太大，正如老师所说，上述几个方案的研究够三个博士毕业的工作了。所以我们将我们的想法收敛，经过组内的讨论和调研，在中期检查后，我们将注意力转到应用层，利用SDN 和云管理工具（Hypervisor）的全局控制能力，设计流级别的调度算法来改善网络性能，于是我们引入了Coflow的概念。另外，由于在openstack平台下，网络配置困难，所以我们考虑先不用虚拟机，而是在直接在服务器上搭建hadoop平台。基于这个平台，我们完成了Coflow调度算法的设计，并在matlab内进行了完整地仿真实验，以及性能的分析。另外在真实系统中，我们实现了利用SDN集中调控hadoop中的任务流，同时进行了实验测试，在任务的完成时间上我们得到$5\%$的性能提升。
+
+回顾一年来的工作，从最初的认识大数据处理，到平台的选择，算法的设计，仿真、实现、测试以及最后的结果分析总结，我们经历了很多的周折，不断的重新选择，不断的调整方向，最终收敛到目前的工作，感谢这各项目的给予我们的锻炼，收获很多，感谢耐心帮助过我们的师兄师姐，感谢我们的指导老师对我们的帮助和支持。
 \section{参考文献}
 
 \bibliographystyle{plain}
@@ -506,55 +544,6 @@ SDN性能瓶颈分析
 %\cite{引用文章名称}
 %"引用文章名称" 就是前边定义@article后面的名称.
 
-%  \begin{figure}[!htb]
-%    \centering
-%\subfigure[国外]{\includegraphics[height=3in,width = 2.5in]{clipboard.png}}
-%\subfigure[国内]{\includegraphics[height=3in,width = 2.5in]{Wearable.jpg}}
-%        \caption{国内外监测身体状况的可穿戴设备及厂商概览}
-%\end{figure}
-%  \begin{figure}[!htb]
-%    \centering
-%    \let\c@\includegraphics[height=1.5in]{anyi.jpg}\relax
-%    %\let\c@\includegraphics[height=1.2in]{fitbit.png}\relax
-%        \caption{needfinding采访}
-%\end{figure}
-%\section{Brainstorming}
-%
-%%\begin{figure*}[t!]
-%%    \centering
-%%    \begin{subfigure}[t]{0.5\textwidth}
-%%        \centering
-%%        \includegraphics[height=1.2in]{iWatch.png}
-%%        \caption{iWatch}
-%%    \end{subfigure}%
-%%    ~
-%%    \begin{subfigure}[t]{0.5\textwidth}
-%%        \centering
-%%        \includegraphics[height=1.2in]{fitbit.png}
-%%        \caption{Fitbit}
-%%    \end{subfigure}
-%%    \caption{腕带类可穿戴设备}
-%%\end{figure*}
-%\begin{figure}[!htb]
-%    \centering
-%    \let\c@\includegraphics[height=1.2in]{iWatch.png}\relax
-%    \let\c@\includegraphics[height=1.2in]{fitbit.png}\relax
-%        \caption{iWatch and Fitbit}
-%\end{figure}
-
-
-%\begin{figure}[!htb]
-%  \centering
-%  % Requires \usepackage{graphicx}
-%  \includegraphics[width=1.0\textwidth]{objective-function.eps}\\
-%  \caption{objective function}\label{eps:o_f}
-%\end{figure}
-%\begin{figure}[!htb]
-%  \centering
-%  % Requires \usepackage{graphicx}
-%  \includegraphics[width=1.0\textwidth]{classification-Error.eps}\\
-%  \caption{classification Error}\label{eps:classification-Error}
-%\end{figure}
 
 %%%%%%%%%%  参考文献  %%%%%%%%%%
 
