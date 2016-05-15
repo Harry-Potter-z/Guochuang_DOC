@@ -215,7 +215,7 @@ varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算
         \ENDIF
         \STATE 统计当前时刻到达的Coflow；
         \IF{有Coflow到达}
-            \STATE 根据当前资源，调用流级别的调度算法MFF-SP\ref{alg:MFF_SP_Algo}，计算Coflow的完成时间；
+            \STATE 根据当前资源，调用流级别的调度算法MFF-SP（算法：\ref{alg:MFF_SP_Algo}），计算Coflow的完成时间；
             \STATE 根据Coflow的完成时间，进行升序排序；
             \STATE Coflow完成时间最短的先部署
             \STATE 更新网络资源
@@ -248,7 +248,7 @@ varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算
     \end{algorithmic}
 \end{algorithm}
 \noindent\hrule
-\vspace{0.1em}\noindent\hrule
+\vspace{0em}\noindent\hrule
 \subsection{coflow调度算法的性能表现}
 我们完成了两种Coflow调度算法的设计：
 \begin{enumerate}
@@ -260,19 +260,19 @@ varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算
 %Coflow平均完成时间图
 \begin{figure}[ht]
     \centering
-    \let\c@\includegraphics[height=2in]{Coflow_cct_fcfs_rate_jobrate_0_5.jpg}\relax
-    \let\c@\includegraphics[height=2in]{Coflow_cct_mccft_rate_jobrate_0_5.jpg}\relax
-    
-    \let\c@\includegraphics[height=2in]{Coflow_cct_fcfs_rate.jpg}\relax
-    \let\c@\includegraphics[height=2in]{Coflow_cct_mccft_rate.jpg}\relax
+    \let\c@\includegraphics[height=1.8in]{Coflow_cct_fcfs_rate_jobrate_0_5.jpg}\relax
+    \let\c@\includegraphics[height=1.8in]{Coflow_cct_mccft_rate_jobrate_0_5.jpg}\relax
+
+    \let\c@\includegraphics[height=1.8in]{Coflow_cct_fcfs_rate.jpg}\relax
+    \let\c@\includegraphics[height=1.8in]{Coflow_cct_mccft_rate.jpg}\relax
     \caption{FCFS和MCCFT两种算法在job到达速度分别为0.5和2.5时Coflow完成时间对比}
 \end{figure}
 根据图（Figure 7）显示的结果，我们发现在我们调用Coflow调度算法FCFS 时，Coflow的完成时间分布在$0\backsim140$个单位时间之间，而在调用我们设计的Coflow 调度算法MCCFT 时，在15 个单位时间以内的Coflow 占据全部Coflow 的$95\%$ 以上。
 
 \begin{figure}[ht]
     \centering
-    \let\c@\includegraphics[height=2in]{bw_statistics_fcfs.jpg}\relax
-    \let\c@\includegraphics[height=2in]{bw_statistics_mcctf.jpg}\relax
+    \let\c@\includegraphics[height=1.8in]{bw_statistics_fcfs.jpg}\relax
+    \let\c@\includegraphics[height=1.8in]{bw_statistics_mcctf.jpg}\relax
     \caption{FCFS和MCCFT两种算法的每条链路上的带宽利用率对比}
 \end{figure}
 根据图（Figure 8）显示的结果，我们发现Coflow调度算法MCCFT的链路带宽利用率要比FCFS高出10倍左右
@@ -280,17 +280,17 @@ varys是交换结构，考虑无阻塞的情况。我们在设计coflow调度算
 %带宽利用率图
 \begin{figure}[ht]
     \centering
-    \let\c@\includegraphics[height=2.5in]{Coflow_meancct_twoalgo_jobrate_0_5.jpg}\relax
-    \let\c@\includegraphics[height=2.5in]{bw_utilize_rate_twoalgo_jobrate_0_5.jpg}\relax
+    \let\c@\includegraphics[height=2in]{Coflow_meancct_twoalgo_jobrate_0_5.jpg}\relax
+    \let\c@\includegraphics[height=2in]{bw_utilize_rate_twoalgo_jobrate_0_5.jpg}\relax
 
-    \let\c@\includegraphics[height=2.5in]{Coflow_meancct_twoalgo_jobrate_2_5.jpg}\relax
-    \let\c@\includegraphics[height=2.5in]{bw_utilize_rate_twoalgo_jobrate_2_5.jpg}\relax
+    \let\c@\includegraphics[height=2in]{Coflow_meancct_twoalgo_jobrate_2_5.jpg}\relax
+    \let\c@\includegraphics[height=2in]{bw_utilize_rate_twoalgo_jobrate_2_5.jpg}\relax
     \caption{FCFS和MCCFT两种算法的在job到达速度分别为0.5和2.5时Coflow平均带宽利用率以及平均完成时间对比}
 \end{figure}
 根据图（Figure 9）中的显示结果，我们可以看到算法MCCTF的Coflow的完成时间明显比算法FCFS的完成时间短，说明我们设计的算法是有效果的，最小化Coflow 的完成时间的Coflow调度算法确实可以缩短任务的平均完成时间。同时也验证了我们之前对Coflow完成时间优化的分析，如Figure:\ref{fig:coflow_cct}。\\
 
 综上三组对比图我们发现，我们设计的Coflow调度算法MCCFT相比传统的Flow 级别的调度算法更加优越，因为MCCFT可以实现更小的Coflow完成时间，更高的带宽利用率。而且我们发现越是数据密集型的数据，我们的算法优势越是明显。\\
-\vspace{2em}
+\vspace{10em}
 \section{实验平台搭建}
 \subsection{实验环境}
 \begin{figure}[!htb]
@@ -423,6 +423,7 @@ ovs-vsctl set-manager ptcp:6640
     \let\c@\includegraphics[height=3in]{work_arch.jpg}\relax
     \caption{基于SDN+Hadoop的系统架构设计}
 \end{figure}
+%在下面详细描述一下系统架构图的运行流程，描述一下各个模块之间的工作流程
 
 \subsection{MapReduce Fetcher}
 Map任务结束之后，主要进行Copy、Sort、Reduce三个步骤；其中Copy阶段，就是从执行各个Map任务的节点获取map的输出文件。这是由ReduceTask.ReduceCopier 类来负责。ReduceCopier对象负责将Map函数的输出拷贝至Reduce所在机器。在这个过程中，Reduce 进程会启动一些数据复制线程 (Fetcher)，通过 HTTP GET 方法请求由 HTTP Server 管理的 Shuffle 数据块，这些数据块是先前成功完成的 Map Task 的输出文件。这些等待 Shuffle 的数据块可能在内存中也有可能在 HDFS 中，取决于服务器当前的内存是否充足以及对 Hadoop 的配置。如果大小超过一定阈值就写到磁盘，否则放入内存。\\
@@ -539,10 +540,9 @@ SDN性能瓶颈分析
 在开发过程中，我们发现这其中的工作量实在太大，正如老师所说，上述几个方案的研究够三个博士毕业的工作了。所以我们将我们的想法收敛，经过组内的讨论和调研，在中期检查后，我们将注意力转到应用层，利用SDN 和云管理工具（Hypervisor）的全局控制能力，设计流级别的调度算法来改善网络性能，于是我们引入了Coflow的概念。另外，由于在openstack平台下，网络配置困难，所以我们考虑先不用虚拟机，而是在直接在服务器上搭建hadoop平台。基于这个平台，我们完成了Coflow调度算法的设计，并在matlab内进行了完整地仿真实验，以及性能的分析。另外在真实系统中，我们实现了利用SDN 集中调控hadoop中的任务流，同时进行了实验测试，在任务的完成时间上我们得到$5\%$的性能提升。
 
 回顾一年来的工作，从最初的认识大数据处理，到平台的选择，算法的设计，仿真、实现、测试以及最后的结果分析总结，我们经历了很多的周折，不断的重新选择，不断的调整方向，最终收敛到目前的工作，感谢这各项目的给予我们的锻炼，收获很多，感谢耐心帮助过我们的师兄师姐，感谢我们的指导老师对我们的帮助和支持。
-\section{参考文献}
-本文引用参考文献如下：
 
 \bibliographystyle{plain}
+\nocite{*}
 %\bibliographystyle{unsrt}
 \bibliography{references/reference}
 %[1] J. Dean et al. MapReduce: Simplified data processing on large clusters. In OSDI, pages 137–150. 2004.\\
