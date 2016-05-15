@@ -66,7 +66,7 @@
   { \fontsize{15pt}{18pt}\selectfont{\textbf{摘\qquad 要}}}
 \end{center}
 
-由于当前数据中心用并行计算的框架处理大规模的数据，根据调查发现网络是限制大数据处理性能的一大瓶颈。针对网络问题，我们在软件定义网络平台上针对开源的 Apache Hadoop MapReduce 平台实现了一个可行的调度控制系统，并将 Coflow 的概念引入了大数据平台，建立了控制架构，实现了两个Coflow的调度算法。仿真结果显示我们设计的最小化Coflow完成时间的调度算法要比先到达先服务的调度算法节省10倍左右的Coflow完成时间。进一步我们尝试通过一系列工业优化方法克服 SDN 中高带宽 TCP 应用的难点问题，如包超时重传导致的拥堵以及难以直接从 Hadoop MapReduce 模块中拿到调度流所必须的信息等等。 测试结果表明，在使用我们的调度器后，MapReduce 任务的性能在 SDN 环境下提升了 5\%。
+由于当前数据中心用并行计算的框架处理大规模的数据，根据调查发现网络是限制大数据处理性能的一大瓶颈。针对网络问题，我们引入了软件定义网络，并针对开源的 Apache Hadoop MapReduce 平台实现了一个可行的调度控制系统，并将 Coflow 的概念引入了大数据平台，建立了控制架构，实现了两个Coflow的调度算法。仿真结果显示我们设计的最小化Coflow完成时间的调度算法要比先到达先服务的调度算法节省10倍左右的Coflow完成时间。进一步我们尝试通过一系列工业优化方法克服 SDN 中高带宽 TCP 应用的难点问题，如包超时重传导致的拥堵以及难以直接从 Hadoop MapReduce 模块中拿到调度流所必须的信息等等。 测试结果表明，在使用我们的调度器后，MapReduce 任务的性能在 SDN 环境下提升了 5\%。
 
 { \fontsize{10pt}{15pt}\selectfont{\textbf{关键词：}}}云计算，大数据，SDN，HADOOP，网络优化
 \clearpage
@@ -74,7 +74,7 @@
   { \fontsize{15pt}{18pt}\selectfont{\textbf{ABSTRACT}}}
 \end{center}
 
-
+Parallel processing in Big Data is a trend nowadays. And network is a bottleneck for the system overall performance. To study this problem, we introduced the Software Defined Network solution to the Big Data Network and developed a viable scheduling system based on Open-Source Apache Hadoop MapReduce platform. Also, we introduced the concept of Coflow into the system to boost the overall performance and implemented two scheduling algorithms. The simulation result shows that the Coflow completion time is 10x faster than the that without Coflow policy. Furthermore, we use a series of industrial optimization methods to overcome the difficulties of using SDN in traditional TCP networks, such as TCP retransmission-caused congestion and inconvenience in taking information necessary for flow scheduling directly from Hadoop MapReduce. The result shows than our scheduler has a 5\% performance gain over the original system.
 
 { \fontsize{10pt}{15pt}\selectfont{\textbf{KEY WORDS：}}}Cloud computing，Bigdata，SDN，HADOOP，network optimization
 \clearpage
