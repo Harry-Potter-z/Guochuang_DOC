@@ -424,6 +424,13 @@ ovs-vsctl set-manager ptcp:6640
     \caption{基于SDN+Hadoop的系统架构设计}
 \end{figure}
 %在下面详细描述一下系统架构图的运行流程，描述一下各个模块之间的工作流程
+从系统架构图可以看到，PyCon 作为我们的中心调度器，与诸多组件有通信：
+1. 在 PyCon 启动时，会调用 OVS 远程接口对各个 OVS 交换机进行队列的直接配置，以及初始流表的下发;
+2. PyCon 的 HTTP Server 模块从 Hadoop 和 Floodlight 插件处获取 HTTP POST 信息，里面包含调度流时所必须的一些信息;
+3. 当 HTTP Server 收到一个完整的流信息，便会执行算法模块，然后调用流表下发 API 进行铺路。
+4. PyCon 内部另有一个定时模块，每秒从 Floodlight 获取实时的网络带宽信息。
+
+OVS 交换机会将匹配 actions=controller 的包以 packet in 的形式上传到 Floodlight 控制器，然后我们编写的 Floodlight 插件会对这个包进行分析并将需要的信息发送给 PyCon。
 
 \subsection{MapReduce Fetcher}
 Map任务结束之后，主要进行Copy、Sort、Reduce三个步骤；其中Copy阶段，就是从执行各个Map任务的节点获取map的输出文件。这是由ReduceTask.ReduceCopier 类来负责。ReduceCopier对象负责将Map函数的输出拷贝至Reduce所在机器。在这个过程中，Reduce 进程会启动一些数据复制线程 (Fetcher)，通过 HTTP GET 方法请求由 HTTP Server 管理的 Shuffle 数据块，这些数据块是先前成功完成的 Map Task 的输出文件。这些等待 Shuffle 的数据块可能在内存中也有可能在 HDFS 中，取决于服务器当前的内存是否充足以及对 Hadoop 的配置。如果大小超过一定阈值就写到磁盘，否则放入内存。\\
